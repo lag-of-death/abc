@@ -1,1 +1,130 @@
 
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <title>Car Racing Game</title>
+  <style>
+      body {
+          margin: 0;
+          overflow: hidden;
+          background-color: lightyellow;
+      }
+
+      canvas {
+          display: block;
+      }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<script>
+  let gamepadIndex;
+
+  window.addEventListener("gamepadconnected", (e) => {
+    gamepadIndex = e.gamepad.index;
+  });
+
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const car = { x: canvas.width / 2, y: canvas.height - 100, width: 40, height: 60, speed: 5, size: 40 };
+  let leftArrowPressed = false;
+  let rightArrowPressed = false;
+  let obstacles = [];
+  let score = 0;
+  let gameInterval;
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft") {
+      leftArrowPressed = true;
+    }
+    if (event.key === "ArrowRight") {
+      rightArrowPressed = true;
+    }
+  });
+
+  document.addEventListener("keyup", (event) => {
+    if (event.key === "ArrowLeft") {
+      leftArrowPressed = false;
+    }
+    if (event.key === "ArrowRight") {
+      rightArrowPressed = false;
+    }
+  });
+
+  function createObstacle() {
+    const obstacleX = Math.random() * (canvas.width - 40);
+    obstacles.push({ x: obstacleX, y: 0, width: 40, height: 40, speed: 2 });
+  }
+
+  function updateGameArea() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (navigator.getGamepads()[gamepadIndex]) {
+
+      const direction = navigator.getGamepads()[gamepadIndex].axes[0];
+
+      if (direction === -1) {
+        car.x -= car.speed;
+      } else if (direction === 1) {
+        car.x += car.speed;
+      }
+    }
+
+    if (leftArrowPressed && car.x > 0) {
+      car.x -= car.speed;
+    }
+
+    if (rightArrowPressed && car.x && (car.width + car.x < canvas.width)) {
+      car.x += car.speed;
+    }
+
+    for (let i = 0; i < obstacles.length; i++) {
+      obstacles[i].y += obstacles[i].speed;
+      if (obstacles[i].y > canvas.height) {
+        obstacles.splice(i, 1);
+        i--;
+      }
+    }
+
+    // Collision detection
+    for (let i = 0; i < obstacles.length; i++) {
+      if (
+        car.x < obstacles[i].x + obstacles[i].width &&
+        car.x + car.width > obstacles[i].x &&
+        car.y < obstacles[i].y + obstacles[i].height &&
+        car.y + car.height > obstacles[i].y
+      ) {
+        clearInterval(gameInterval);
+        alert("Game Over! Your Score: " + score);
+        location.reload();
+      }
+    }
+
+    for (let i = 0; i < obstacles.length; i++) {
+      ctx.fillStyle = "red";
+      ctx.fillRect(obstacles[i].x, obstacles[i].y, obstacles[i].width, obstacles[i].height);
+    }
+
+    ctx.fillStyle = "green";
+    ctx.fillRect(car.x, car.y, car.width, car.height);
+
+    // Display the score
+    ctx.fillStyle = "white";
+    ctx.font = "24px Arial";
+    ctx.fillText("Score: " + score, 10, 30);
+
+    if (Math.random() < 0.02) {
+      createObstacle();
+    }
+    score++;
+  }
+
+  gameInterval = setInterval(updateGameArea, 20);
+</script>
+</body>
+</html>
